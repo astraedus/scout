@@ -32,7 +32,7 @@ class WebsiteExtractor(BaseExtractor):
                         nova.act(f"Click on the first search result that looks like the official website for {company_name}")
 
                     # Extract main page info
-                    homepage_data = nova.act_get(
+                    homepage_data = nova.act(
                         f"Extract the following information about {company_name} from this page: "
                         "company name and tagline, what they do (1-2 sentences), "
                         "products or services offered, any technology or platform mentions, "
@@ -43,7 +43,7 @@ class WebsiteExtractor(BaseExtractor):
                     team_data = ""
                     try:
                         nova.act("Look for and click on an 'About', 'About Us', or 'Team' link in the navigation")
-                        team_data = nova.act_get(
+                        team_data = nova.act(
                             "Extract leadership team members with their names and titles. "
                             "Also note company size, founding year, mission statement if mentioned. "
                             "Return as structured text."

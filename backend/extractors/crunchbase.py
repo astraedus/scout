@@ -27,7 +27,7 @@ class CrunchbaseExtractor(BaseExtractor):
                     )
 
                     # Extract whatever is visible (Crunchbase may paywall)
-                    data = nova.act_get(
+                    data = nova.act(
                         f"Extract all visible company data for {company_name} from Crunchbase: "
                         "funding status, total raised, last funding round (type, amount, date), "
                         "key investors, revenue estimate, employee count, founded date, "

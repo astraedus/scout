@@ -30,7 +30,7 @@ class CareersExtractor(BaseExtractor):
                             f"Click on the first result that looks like a careers or jobs page for {company_name}"
                         )
 
-                    data = nova.act_get(
+                    data = nova.act(
                         f"Extract job listing information for {company_name}: "
                         "number of open positions, job categories (engineering, sales, etc.), "
                         "specific technologies mentioned (programming languages, frameworks, tools), "

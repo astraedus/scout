@@ -91,8 +91,15 @@ async def synthesize_briefing(extracted_data: ExtractedData) -> Briefing:
 
         raw_text = response["output"]["message"]["content"][0]["text"]
 
+        # Strip markdown fences if present (LLMs often add ```json ... ```)
+        text = raw_text.strip()
+        if text.startswith("```"):
+            lines = text.splitlines()
+            # Remove first line (```json or ```) and last line (```)
+            text = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
+
         # Parse JSON response
-        briefing_data = json.loads(raw_text.strip())
+        briefing_data = json.loads(text.strip())
         return Briefing(**briefing_data)
 
     except ImportError:

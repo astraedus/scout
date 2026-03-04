@@ -27,7 +27,7 @@ class LinkedInExtractor(BaseExtractor):
                     )
 
                     # Extract company info
-                    about_data = nova.act_get(
+                    about_data = nova.act(
                         f"Extract company information for {company_name} from this LinkedIn page: "
                         "company description/overview, industry, company size (employee count), "
                         "headquarters location, founded year, website URL, specialties. "
@@ -38,7 +38,7 @@ class LinkedInExtractor(BaseExtractor):
                     people_data = ""
                     try:
                         nova.act("Navigate to the 'People' tab or section of this company page")
-                        people_data = nova.act_get(
+                        people_data = nova.act(
                             "List the key leadership: CEO, CTO, VP-level and above with names and titles. "
                             "Also note the total employee count shown."
                         ).response

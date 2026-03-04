@@ -21,7 +21,7 @@ class GoogleNewsExtractor(BaseExtractor):
 
             def _run():
                 with NovaAct(starting_page=search_url) as nova:
-                    data = nova.act_get(
+                    data = nova.act(
                         f"Extract the top 5-8 recent news articles about {company_name}. "
                         "For each article, provide: headline, source publication, "
                         "approximate date, and a 1-sentence summary. "

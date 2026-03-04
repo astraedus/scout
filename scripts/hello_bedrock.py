@@ -19,7 +19,7 @@ try:
         region_name=os.getenv("AWS_REGION", "us-east-1"),
     )
 
-    model_id = "us.amazon.nova-2-lite-v1:0"
+    model_id = os.getenv("BEDROCK_MODEL_ID", "us.amazon.nova-lite-v1:0")
 
     response = client.converse(
         modelId=model_id,

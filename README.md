@@ -78,7 +78,7 @@ source venv/bin/activate
 pip install -r backend/requirements.txt
 
 # Configure environment
-cp .env.example .env
+cp .env.template .env
 # Edit .env with your API keys
 
 # Run (mock mode for testing without API keys)
@@ -120,9 +120,8 @@ python scripts/hello_bedrock.py     # Test Bedrock
 
 ### Nova Act (Browser Automation)
 Each extractor uses Nova Act to navigate real websites:
-- `act()` for navigation actions (clicking links, searching)
-- `act_get()` for structured data extraction
-- Multiple browser sessions extract data from different sources
+- `act()` for all browser actions — navigation, clicking, and data extraction
+- Multiple browser sessions extract data from different sources in sequence
 - Graceful error handling for blocked/unavailable sites
 
 ### Nova 2 Lite (AI Synthesis)

@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     aws_access_key_id: str = ""
     aws_secret_access_key: str = ""
     aws_region: str = "us-east-1"
-    bedrock_model_id: str = "us.amazon.nova-2-lite-v1:0"
+    bedrock_model_id: str = "us.amazon.nova-lite-v1:0"
 
     # Database
     database_url: str = "sqlite:///./scout.db"
