@@ -1,54 +1,44 @@
 """
 Crunchbase extractor — funding rounds, investors, and company vitals.
 """
+import asyncio
 from typing import Optional
 from backend.extractors.base import BaseExtractor
 from backend.models.schemas import ExtractorResult
-from backend.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
 
 
 class CrunchbaseExtractor(BaseExtractor):
-    """
-    Extracts funding, investor, and company data from Crunchbase.
-    """
-
     source_name = "crunchbase"
 
     async def extract(self, company_name: str, website_url: Optional[str] = None) -> ExtractorResult:
         try:
             from nova_act import NovaAct
 
-            search_url = f"https://www.crunchbase.com/textsearch?q={company_name.replace(' ', '%20')}"
+            search_url = f"https://www.google.com/search?q={company_name}+site:crunchbase.com"
 
-            with NovaAct(starting_url=search_url, api_key=settings.nova_act_api_key) as nova:
-                # Click through to company page
-                nova.act(f"Click on the company result for {company_name}.")
+            def _run():
+                with NovaAct(starting_page=search_url) as nova:
+                    # Navigate to Crunchbase page via Google
+                    nova.act(
+                        f"Click on the first Crunchbase result for {company_name}"
+                    )
 
-                result = nova.act(
-                    f"Extract funding and company data for {company_name} from Crunchbase. "
-                    "Get: total funding amount, funding stage, last funding date, key investors, "
-                    "founding year, number of employees, headquarters, and any notable acquisitions.",
-                    schema={
-                        "type": "object",
-                        "properties": {
-                            "total_funding": {"type": "string"},
-                            "funding_stage": {"type": "string"},
-                            "last_funding_date": {"type": "string"},
-                            "last_funding_amount": {"type": "string"},
-                            "investors": {"type": "array", "items": {"type": "string"}},
-                            "founded": {"type": "string"},
-                            "employee_count": {"type": "string"},
-                            "headquarters": {"type": "string"},
-                            "acquisitions": {"type": "array", "items": {"type": "string"}},
-                        },
-                    },
-                )
+                    # Extract whatever is visible (Crunchbase may paywall)
+                    data = nova.act_get(
+                        f"Extract all visible company data for {company_name} from Crunchbase: "
+                        "funding status, total raised, last funding round (type, amount, date), "
+                        "key investors, revenue estimate, employee count, founded date, "
+                        "categories/industries. "
+                        "Note if any data is behind a paywall."
+                    ).response
 
-                data = result.parsed_response or {}
-                return self._success(data)
+                    return {"crunchbase_data": data}
+
+            result = await asyncio.get_event_loop().run_in_executor(None, _run)
+            return self._success(result)
 
         except ImportError:
             return self._failure("nova_act package not installed")

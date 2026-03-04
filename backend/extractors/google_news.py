@@ -1,21 +1,16 @@
 """
 Google News extractor — finds recent news about a company using Nova Act.
 """
+import asyncio
 from typing import Optional
 from backend.extractors.base import BaseExtractor
 from backend.models.schemas import ExtractorResult
-from backend.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
 
 
 class GoogleNewsExtractor(BaseExtractor):
-    """
-    Searches Google News for recent articles about the company.
-    Extracts headlines, dates, and summaries.
-    """
-
     source_name = "google_news"
 
     async def extract(self, company_name: str, website_url: Optional[str] = None) -> ExtractorResult:
@@ -24,33 +19,19 @@ class GoogleNewsExtractor(BaseExtractor):
 
             search_url = f"https://news.google.com/search?q={company_name.replace(' ', '+')}"
 
-            with NovaAct(starting_url=search_url, api_key=settings.nova_act_api_key) as nova:
-                result = nova.act(
-                    f"Find recent news articles about {company_name}. "
-                    "Extract up to 10 recent headlines with their dates and brief summaries. "
-                    "Focus on funding announcements, product launches, partnerships, and company milestones.",
-                    schema={
-                        "type": "object",
-                        "properties": {
-                            "articles": {
-                                "type": "array",
-                                "items": {
-                                    "type": "object",
-                                    "properties": {
-                                        "headline": {"type": "string"},
-                                        "date": {"type": "string"},
-                                        "summary": {"type": "string"},
-                                        "source": {"type": "string"},
-                                    },
-                                },
-                            },
-                            "sentiment": {"type": "string", "enum": ["positive", "neutral", "negative"]},
-                        },
-                    },
-                )
+            def _run():
+                with NovaAct(starting_page=search_url) as nova:
+                    data = nova.act_get(
+                        f"Extract the top 5-8 recent news articles about {company_name}. "
+                        "For each article, provide: headline, source publication, "
+                        "approximate date, and a 1-sentence summary. "
+                        "Focus on articles from the last 60 days. "
+                        "If no recent news is found, say so."
+                    ).response
+                    return {"articles_raw": data}
 
-                data = result.parsed_response or {"articles": []}
-                return self._success(data)
+            result = await asyncio.get_event_loop().run_in_executor(None, _run)
+            return self._success(result)
 
         except ImportError:
             return self._failure("nova_act package not installed")

@@ -9,7 +9,6 @@ from enum import Enum
 
 class ResearchStatus(str, Enum):
     PENDING = "pending"
-    RUNNING = "running"
     EXTRACTING = "extracting"
     SYNTHESIZING = "synthesizing"
     COMPLETE = "complete"
@@ -18,7 +17,7 @@ class ResearchStatus(str, Enum):
 
 class ExtractorResult(BaseModel):
     """Result from a single extractor."""
-    source: str  # e.g. "website", "google_news", "linkedin", "crunchbase", "careers"
+    source: str  # "website", "google_news", "linkedin", "crunchbase", "careers"
     success: bool
     data: dict = Field(default_factory=dict)
     error: Optional[str] = None
@@ -32,20 +31,45 @@ class ExtractedData(BaseModel):
     results: List[ExtractorResult] = Field(default_factory=list)
 
 
+class KeyPerson(BaseModel):
+    name: str
+    title: str
+
+class NewsItem(BaseModel):
+    headline: str
+    date: Optional[str] = None
+    summary: Optional[str] = None
+
+class TechStack(BaseModel):
+    confirmed: List[str] = Field(default_factory=list)
+    inferred: List[str] = Field(default_factory=list)
+
+class FundingInfo(BaseModel):
+    total_raised: Optional[str] = None
+    last_round: Optional[str] = None
+    investors: List[str] = Field(default_factory=list)
+
+
 class Briefing(BaseModel):
     """AI-synthesized company briefing from Nova 2 Lite."""
+    company_name: Optional[str] = None
     summary: str
     business_model: Optional[str] = None
-    products_services: Optional[List[str]] = None
-    target_market: Optional[str] = None
-    funding_stage: Optional[str] = None
-    key_people: Optional[List[str]] = None
-    recent_news: Optional[List[str]] = None
-    open_roles: Optional[List[str]] = None
-    tech_stack: Optional[List[str]] = None
-    competitive_landscape: Optional[str] = None
-    sentiment: Optional[str] = None  # positive / neutral / negative
-    confidence: float = 0.0  # 0-1
+    industry: Optional[str] = None
+    stage: Optional[str] = None
+    founded: Optional[str] = None
+    headquarters: Optional[str] = None
+    size: Optional[str] = None
+    website: Optional[str] = None
+    products_services: List[str] = Field(default_factory=list)
+    key_people: List[KeyPerson] = Field(default_factory=list)
+    recent_news: List[NewsItem] = Field(default_factory=list)
+    tech_stack: TechStack = Field(default_factory=TechStack)
+    growth_signals: List[str] = Field(default_factory=list)
+    competitive_landscape: List[str] = Field(default_factory=list)
+    talking_points: List[str] = Field(default_factory=list)
+    funding: Optional[FundingInfo] = None
+    confidence: float = 0.0
 
 
 class CompanyResearch(BaseModel):
@@ -77,6 +101,6 @@ class ProgressEvent(BaseModel):
     """SSE progress event sent to frontend."""
     research_id: str
     status: ResearchStatus
-    stage: str  # human-readable current stage
+    stage: str
     progress: int  # 0-100
     message: Optional[str] = None

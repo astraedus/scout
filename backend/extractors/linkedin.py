@@ -1,55 +1,57 @@
 """
 LinkedIn company page extractor using Nova Act.
 """
+import asyncio
 from typing import Optional
 from backend.extractors.base import BaseExtractor
 from backend.models.schemas import ExtractorResult
-from backend.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
 
 
 class LinkedInExtractor(BaseExtractor):
-    """
-    Extracts company info from LinkedIn company page.
-    Gets employee count, industry, specialties, and recent posts.
-    """
-
     source_name = "linkedin"
 
     async def extract(self, company_name: str, website_url: Optional[str] = None) -> ExtractorResult:
         try:
             from nova_act import NovaAct
 
-            search_url = (
-                f"https://www.linkedin.com/search/results/companies/?keywords={company_name.replace(' ', '%20')}"
-            )
+            search_url = f"https://www.google.com/search?q={company_name}+site:linkedin.com/company"
 
-            with NovaAct(starting_url=search_url, api_key=settings.nova_act_api_key) as nova:
-                # Navigate to the company page
-                nova.act(f"Click on the first result for {company_name} company page.")
+            def _run():
+                with NovaAct(starting_page=search_url) as nova:
+                    # Navigate to the LinkedIn company page via Google
+                    nova.act(
+                        f"Click on the first LinkedIn company page result for {company_name}"
+                    )
 
-                result = nova.act(
-                    f"Extract company information from this LinkedIn page for {company_name}. "
-                    "Get: employee count, industry, headquarters, founding year, company description, "
-                    "specialties/focus areas, and any recent company updates.",
-                    schema={
-                        "type": "object",
-                        "properties": {
-                            "employee_count": {"type": "string"},
-                            "industry": {"type": "string"},
-                            "headquarters": {"type": "string"},
-                            "founded": {"type": "string"},
-                            "description": {"type": "string"},
-                            "specialties": {"type": "array", "items": {"type": "string"}},
-                            "followers": {"type": "string"},
-                        },
-                    },
-                )
+                    # Extract company info
+                    about_data = nova.act_get(
+                        f"Extract company information for {company_name} from this LinkedIn page: "
+                        "company description/overview, industry, company size (employee count), "
+                        "headquarters location, founded year, website URL, specialties. "
+                        "Return all information as structured text."
+                    ).response
 
-                data = result.parsed_response or {}
-                return self._success(data)
+                    # Try to get key people
+                    people_data = ""
+                    try:
+                        nova.act("Navigate to the 'People' tab or section of this company page")
+                        people_data = nova.act_get(
+                            "List the key leadership: CEO, CTO, VP-level and above with names and titles. "
+                            "Also note the total employee count shown."
+                        ).response
+                    except Exception:
+                        people_data = "Could not access People section"
+
+                    return {
+                        "about": about_data,
+                        "people": people_data,
+                    }
+
+            result = await asyncio.get_event_loop().run_in_executor(None, _run)
+            return self._success(result)
 
         except ImportError:
             return self._failure("nova_act package not installed")

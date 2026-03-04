@@ -1,68 +1,48 @@
 """
 Careers / job listings extractor — signals company growth and tech stack.
 """
+import asyncio
 from typing import Optional
 from backend.extractors.base import BaseExtractor
 from backend.models.schemas import ExtractorResult
-from backend.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
 
 
 class CareersExtractor(BaseExtractor):
-    """
-    Extracts open job listings from the company careers page or LinkedIn jobs.
-    Job listings signal tech stack, growth areas, and company priorities.
-    """
-
     source_name = "careers"
 
     async def extract(self, company_name: str, website_url: Optional[str] = None) -> ExtractorResult:
         try:
             from nova_act import NovaAct
 
-            # Try company careers page first, fall back to LinkedIn jobs
+            # Search for careers page
             if website_url:
-                start_url = website_url
+                start_url = website_url.rstrip('/') + '/careers'
             else:
-                start_url = f"https://www.google.com/search?q={company_name.replace(' ', '+')}+careers+jobs"
+                start_url = f"https://www.google.com/search?q={company_name}+careers+jobs+hiring"
 
-            with NovaAct(starting_url=start_url, api_key=settings.nova_act_api_key) as nova:
-                # Navigate to careers section
-                nova.act(
-                    f"Navigate to the careers or jobs section of {company_name}. "
-                    "Look for a 'Careers', 'Jobs', or 'Work with us' link and click it."
-                )
+            def _run():
+                with NovaAct(starting_page=start_url) as nova:
+                    if not website_url:
+                        nova.act(
+                            f"Click on the first result that looks like a careers or jobs page for {company_name}"
+                        )
 
-                result = nova.act(
-                    f"Extract job listings information for {company_name}. "
-                    "Get: list of open roles (title + department), technologies mentioned in job descriptions, "
-                    "total number of open positions, and which departments are hiring most.",
-                    schema={
-                        "type": "object",
-                        "properties": {
-                            "open_roles": {
-                                "type": "array",
-                                "items": {
-                                    "type": "object",
-                                    "properties": {
-                                        "title": {"type": "string"},
-                                        "department": {"type": "string"},
-                                        "location": {"type": "string"},
-                                    },
-                                },
-                            },
-                            "tech_stack": {"type": "array", "items": {"type": "string"}},
-                            "total_openings": {"type": "integer"},
-                            "top_hiring_departments": {"type": "array", "items": {"type": "string"}},
-                            "remote_friendly": {"type": "boolean"},
-                        },
-                    },
-                )
+                    data = nova.act_get(
+                        f"Extract job listing information for {company_name}: "
+                        "number of open positions, job categories (engineering, sales, etc.), "
+                        "specific technologies mentioned (programming languages, frameworks, tools), "
+                        "seniority levels, location patterns (remote/hybrid/cities), "
+                        "which departments are growing fastest. "
+                        "Return as structured text."
+                    ).response
 
-                data = result.parsed_response or {}
-                return self._success(data)
+                    return {"careers_data": data}
+
+            result = await asyncio.get_event_loop().run_in_executor(None, _run)
+            return self._success(result)
 
         except ImportError:
             return self._failure("nova_act package not installed")

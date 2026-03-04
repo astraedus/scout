@@ -23,12 +23,24 @@ from backend.models.schemas import (
     ResearchStatus,
     ProgressEvent,
 )
-from backend.extractors.website import WebsiteExtractor
-from backend.extractors.google_news import GoogleNewsExtractor
-from backend.extractors.linkedin import LinkedInExtractor
-from backend.extractors.crunchbase import CrunchbaseExtractor
-from backend.extractors.careers import CareersExtractor
-from backend.synthesis.briefing import synthesize_briefing
+from backend.config import settings as app_settings
+
+if app_settings.mock_mode:
+    from backend.extractors.mock import (
+        MockWebsiteExtractor as WebsiteExtractor,
+        MockGoogleNewsExtractor as GoogleNewsExtractor,
+        MockLinkedInExtractor as LinkedInExtractor,
+        MockCrunchbaseExtractor as CrunchbaseExtractor,
+        MockCareersExtractor as CareersExtractor,
+    )
+    from backend.synthesis.mock_briefing import mock_synthesize_briefing as synthesize_briefing
+else:
+    from backend.extractors.website import WebsiteExtractor
+    from backend.extractors.google_news import GoogleNewsExtractor
+    from backend.extractors.linkedin import LinkedInExtractor
+    from backend.extractors.crunchbase import CrunchbaseExtractor
+    from backend.extractors.careers import CareersExtractor
+    from backend.synthesis.briefing import synthesize_briefing
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

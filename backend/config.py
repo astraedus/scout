@@ -6,6 +6,9 @@ from typing import Optional
 
 
 class Settings(BaseSettings):
+    # Mock mode — set to "true" to use mock extractors/synthesis (no API keys needed)
+    mock_mode: bool = True
+
     # Nova Act
     nova_act_api_key: str = ""
 

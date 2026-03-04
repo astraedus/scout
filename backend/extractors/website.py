@@ -20,35 +20,46 @@ class WebsiteExtractor(BaseExtractor):
 
     async def extract(self, company_name: str, website_url: Optional[str] = None) -> ExtractorResult:
         try:
+            import asyncio
             from nova_act import NovaAct
 
             start_url = website_url or f"https://www.google.com/search?q={company_name}+official+website"
 
-            with NovaAct(starting_url=start_url, api_key=settings.nova_act_api_key) as nova:
-                # Get main page content
-                result = nova.act(
-                    f"You are researching {company_name}. "
-                    "Extract the following from this webpage: "
-                    "1. Company description/tagline "
-                    "2. Main products or services "
-                    "3. Target market/customers "
-                    "4. Any mentioned team members or founders "
-                    "Return as structured text.",
-                    schema={
-                        "type": "object",
-                        "properties": {
-                            "description": {"type": "string"},
-                            "products_services": {"type": "array", "items": {"type": "string"}},
-                            "target_market": {"type": "string"},
-                            "team_members": {"type": "array", "items": {"type": "string"}},
-                            "website_url": {"type": "string"},
-                        },
-                    },
-                )
+            def _run_extraction():
+                with NovaAct(starting_page=start_url) as nova:
+                    # If we started from Google, navigate to the company site
+                    if not website_url:
+                        nova.act(f"Click on the first search result that looks like the official website for {company_name}")
 
-                data = result.parsed_response or {}
-                data["website_url"] = nova.page.url
-                return self._success(data)
+                    # Extract main page info
+                    homepage_data = nova.act_get(
+                        f"Extract the following information about {company_name} from this page: "
+                        "company name and tagline, what they do (1-2 sentences), "
+                        "products or services offered, any technology or platform mentions, "
+                        "contact information if visible. Return as structured text."
+                    ).response
+
+                    # Try to find and visit About/Team page
+                    team_data = ""
+                    try:
+                        nova.act("Look for and click on an 'About', 'About Us', or 'Team' link in the navigation")
+                        team_data = nova.act_get(
+                            "Extract leadership team members with their names and titles. "
+                            "Also note company size, founding year, mission statement if mentioned. "
+                            "Return as structured text."
+                        ).response
+                    except Exception:
+                        team_data = "About/Team page not found"
+
+                    return {
+                        "homepage": homepage_data,
+                        "team": team_data,
+                        "final_url": str(nova.page.url) if hasattr(nova, 'page') else start_url,
+                    }
+
+            # Nova Act is sync — run in thread pool
+            data = await asyncio.get_event_loop().run_in_executor(None, _run_extraction)
+            return self._success(data)
 
         except ImportError:
             return self._failure("nova_act package not installed")

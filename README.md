@@ -1,43 +1,94 @@
-# Scout — Company Research Agent
+# Scout - AI Company Research Agent
 
-Scout is an AI-powered company research agent built for the Amazon Nova AI Hackathon. It uses Nova Act for browser automation and Nova 2 Lite (via AWS Bedrock) for synthesis.
+**Built for the Amazon Nova AI Hackathon 2026**
+
+Scout turns company research from a 30-minute manual task into a 2-minute automated briefing. Type a company name, and Scout's AI agents navigate real websites to gather live data, then synthesize it into actionable intelligence for sales calls and meetings.
+
+## The Problem
+
+Before every sales call or meeting, professionals spend 30-60 minutes manually browsing:
+- Company website for products and team info
+- LinkedIn for employee count and key people
+- Crunchbase for funding history
+- Google News for recent developments
+- Job boards for growth signals and tech stack
+
+## The Solution
+
+Scout automates this entire workflow:
+
+1. **Input** a company name
+2. **Nova Act** navigates 5+ real websites, extracting structured data from each
+3. **Nova 2 Lite** synthesizes all findings into a structured briefing
+4. **Dashboard** displays the briefing with evidence and talking points
+
+## Key Features
+
+- **Multi-site research**: Extracts data from company websites, LinkedIn, Crunchbase, Google News, and careers pages
+- **Live data**: Nova Act browses real websites in real-time (not stale training data)
+- **Structured briefings**: Key people, recent news, tech stack, growth signals, competitive landscape, and suggested talking points
+- **Graceful degradation**: If a source is blocked or unavailable, Scout still produces a briefing from whatever succeeds
+- **Real-time progress**: SSE-powered progress tracking shows each research stage live
+- **Research history**: SQLite-backed history of past research jobs
 
 ## Architecture
 
 ```
-frontend/          Next.js dashboard (port 3000)
-backend/           FastAPI Python backend (port 8000)
-  extractors/      Nova Act browser extractors (website, LinkedIn, Crunchbase, news, careers)
-  synthesis/       Nova 2 Lite AI briefing synthesis
-  models/          Pydantic data models
-  db/              SQLite storage
-scripts/           Test scripts for Nova Act and Bedrock
+User inputs company name
+  -> FastAPI Backend generates research plan
+  -> Nova Act agents navigate real websites:
+      -> Company website (about, team, products)
+      -> Google News (recent articles)
+      -> LinkedIn (company size, key people)
+      -> Crunchbase (funding, investors)
+      -> Careers page (open roles, tech stack)
+  -> All extracted data collected
+  -> Nova 2 Lite synthesizes structured briefing
+  -> Next.js Dashboard renders results with evidence
 ```
 
-## Quickstart
+## Tech Stack
 
-### 1. Backend setup
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Next.js 14, TypeScript, Tailwind CSS |
+| Backend | Python, FastAPI, Uvicorn |
+| Browser AI | Amazon Nova Act (website navigation + extraction) |
+| Synthesis AI | Amazon Nova 2 Lite via AWS Bedrock (reasoning + structuring) |
+| Database | SQLite via aiosqlite |
+| Real-time | Server-Sent Events (SSE) |
+
+## Getting Started
+
+### Prerequisites
+
+- Python 3.10+
+- Node.js 18+
+- AWS account with Bedrock access (Nova 2 Lite)
+- Nova Act API key from [nova.amazon.com/act](https://nova.amazon.com/act)
+
+### Backend Setup
 
 ```bash
-cd backend
-python -m venv venv
+# Create virtual environment
+python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
-```
 
-Copy `.env.example` to `.env` and fill in your API keys:
+# Install dependencies
+pip install -r backend/requirements.txt
 
-```bash
+# Configure environment
 cp .env.example .env
+# Edit .env with your API keys
+
+# Run (mock mode for testing without API keys)
+MOCK_MODE=true uvicorn backend.main:app --reload --port 8000
+
+# Run (production mode with real APIs)
+MOCK_MODE=false uvicorn backend.main:app --port 8000
 ```
 
-Run the backend:
-
-```bash
-uvicorn backend.main:app --reload --port 8000
-```
-
-### 2. Frontend setup
+### Frontend Setup
 
 ```bash
 cd frontend
@@ -45,31 +96,71 @@ npm install
 npm run dev
 ```
 
-Frontend runs at http://localhost:3000
+Visit http://localhost:3000
 
-### 3. Test connections
+### Test API Connections
 
 ```bash
+source venv/bin/activate
 python scripts/hello_nova_act.py    # Test Nova Act
-python scripts/hello_bedrock.py     # Test Bedrock Nova 2 Lite
+python scripts/hello_bedrock.py     # Test Bedrock
 ```
 
-## API Endpoints
+## API
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/api/research` | Start research for a company |
-| GET | `/api/research/{id}` | Get research status and results |
-| GET | `/api/research/{id}/stream` | SSE stream for live progress |
-| GET | `/api/history` | Get recent research history |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/research` | Start research (body: `{"company_name": "Stripe"}`) |
+| GET | `/api/research/{id}` | Get status and results |
+| GET | `/api/research/{id}/stream` | SSE progress stream |
+| GET | `/api/history` | Recent research history |
 | GET | `/health` | Health check |
 
-## Environment Variables
+## How It Uses Amazon Nova
 
-| Variable | Description |
-|----------|-------------|
-| `NOVA_ACT_API_KEY` | Nova Act API key |
-| `AWS_ACCESS_KEY_ID` | AWS credentials for Bedrock |
-| `AWS_SECRET_ACCESS_KEY` | AWS credentials for Bedrock |
-| `AWS_REGION` | AWS region (default: us-east-1) |
-| `NEXT_PUBLIC_API_URL` | Backend URL for frontend (default: http://localhost:8000) |
+### Nova Act (Browser Automation)
+Each extractor uses Nova Act to navigate real websites:
+- `act()` for navigation actions (clicking links, searching)
+- `act_get()` for structured data extraction
+- Multiple browser sessions extract data from different sources
+- Graceful error handling for blocked/unavailable sites
+
+### Nova 2 Lite (AI Synthesis)
+After extraction, all data is fed to Nova 2 Lite via AWS Bedrock's Converse API:
+- Synthesizes raw data into structured JSON briefing
+- Generates talking points referencing specific findings
+- Assesses data quality and confidence level
+- Identifies growth signals and competitive positioning
+
+## Project Structure
+
+```
+scout/
+  backend/
+    main.py              # FastAPI app + orchestration
+    config.py            # Environment configuration
+    extractors/          # Nova Act browser extractors
+      website.py         # Company website extractor
+      google_news.py     # Google News search
+      linkedin.py        # LinkedIn company page
+      crunchbase.py      # Crunchbase funding data
+      careers.py         # Job listings extractor
+      mock.py            # Mock extractors for development
+    synthesis/
+      briefing.py        # Nova 2 Lite synthesis
+      mock_briefing.py   # Mock synthesis for development
+    models/
+      schemas.py         # Pydantic data models
+    db/
+      database.py        # SQLite storage
+  frontend/              # Next.js dashboard
+  scripts/
+    hello_nova_act.py    # Nova Act smoke test
+    hello_bedrock.py     # Bedrock smoke test
+```
+
+## Built By
+
+Diven Rastdus - Full-Stack Developer & AI Engineer
+
+#AmazonNova
