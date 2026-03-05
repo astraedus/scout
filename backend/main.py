@@ -34,13 +34,26 @@ if app_settings.mock_mode:
         MockCareersExtractor as CareersExtractor,
     )
     from backend.synthesis.mock_briefing import mock_synthesize_briefing as synthesize_briefing
-else:
+elif app_settings.nova_act_api_key:
+    # Nova Act available — use full browser automation
     from backend.extractors.website import WebsiteExtractor
     from backend.extractors.google_news import GoogleNewsExtractor
     from backend.extractors.linkedin import LinkedInExtractor
     from backend.extractors.crunchbase import CrunchbaseExtractor
     from backend.extractors.careers import CareersExtractor
     from backend.synthesis.briefing import synthesize_briefing
+    logger.info("Mode: Nova Act (full browser automation)")
+else:
+    # HTTP fallback — real data via requests/scraping + Bedrock synthesis
+    from backend.extractors.http_website import HttpWebsiteExtractor as WebsiteExtractor
+    from backend.extractors.http_news import HttpNewsExtractor as GoogleNewsExtractor
+    from backend.extractors.mock import (
+        MockLinkedInExtractor as LinkedInExtractor,
+        MockCrunchbaseExtractor as CrunchbaseExtractor,
+        MockCareersExtractor as CareersExtractor,
+    )
+    from backend.synthesis.briefing import synthesize_briefing
+    logger.info("Mode: HTTP fallback (requests + Bedrock synthesis)")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

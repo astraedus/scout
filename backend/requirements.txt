@@ -3,6 +3,9 @@ uvicorn==0.30.0
 nova-act
 boto3
 pydantic==2.9.0
+pydantic-settings
 python-dotenv
 aiofiles
 aiosqlite
+httpx
+beautifulsoup4
