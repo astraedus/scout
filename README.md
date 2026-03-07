@@ -63,6 +63,7 @@ User inputs company name
 | Backend | Python, FastAPI, Uvicorn |
 | Browser AI | Amazon Nova Act (website navigation + extraction) |
 | Synthesis AI | Amazon Nova 2 Lite via AWS Bedrock (reasoning + structuring) |
+| Semantic Search | Amazon Nova Multimodal Embeddings via Bedrock (384-dim vectors) |
 | Database | SQLite via aiosqlite |
 | Real-time | Server-Sent Events (SSE) |
 
@@ -122,6 +123,7 @@ python scripts/hello_bedrock.py     # Test Bedrock
 | GET | `/api/research/{id}` | Get status and results |
 | GET | `/api/research/{id}/stream` | SSE progress stream |
 | GET | `/api/history` | Recent research history |
+| GET | `/api/search?q=` | Semantic search across briefings (Nova Embed) |
 | GET | `/health` | Health check |
 
 ## How It Uses Amazon Nova
@@ -139,6 +141,14 @@ After extraction, all data is fed to Nova 2 Lite via AWS Bedrock's Converse API:
 - Assesses data quality and confidence level
 - Identifies growth signals and competitive positioning
 
+### Nova Multimodal Embeddings (Semantic Search)
+After synthesis, each briefing is embedded using Nova Multimodal Embeddings via Bedrock's InvokeModel API:
+- Generates 384-dimensional embedding vectors for briefing content
+- Enables semantic search across all past research ("find companies in AI safety")
+- Uses `GENERIC_INDEX` purpose for indexing, `TEXT_RETRIEVAL` for queries
+- Cosine similarity ranking returns the most relevant briefings
+- Fully integrated: embeddings auto-generate after every research job
+
 ## Project Structure
 
 ```
@@ -155,6 +165,7 @@ scout/
       mock.py            # Mock extractors for development
     synthesis/
       briefing.py        # Nova 2 Lite synthesis
+      embeddings.py      # Nova Multimodal Embeddings
       mock_briefing.py   # Mock synthesis for development
     models/
       schemas.py         # Pydantic data models
