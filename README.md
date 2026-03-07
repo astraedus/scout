@@ -2,6 +2,14 @@
 
 **Built for the Amazon Nova AI Hackathon 2026**
 
+## Hackathon Submissions
+
+| Hackathon | Platform | Track | Status |
+|-----------|----------|-------|--------|
+| [Amazon Nova AI Hackathon 2026](https://amazonnovaai.devpost.com/) | DevPost | Open | SUBMITTED (no Nova Act key -- geo-blocked, HTTP fallback used) |
+
+**Special adaptations**: Added `http_website.py` + `http_news.py` extractors so Scout works without Nova Act API key (geo-blocked outside US). Three modes: mock, http-fallback (requests/BS4 + Bedrock), nova-act.
+
 Scout turns company research from a 30-minute manual task into a 2-minute automated briefing. Type a company name, and Scout's AI agents navigate real websites to gather live data, then synthesize it into actionable intelligence for sales calls and meetings.
 
 ## The Problem
