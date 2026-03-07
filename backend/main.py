@@ -8,8 +8,10 @@ import logging
 import uuid
 from datetime import datetime
 from typing import AsyncGenerator, Optional
+from collections import defaultdict
+import time
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
@@ -194,9 +196,18 @@ async def _run_research(research: CompanyResearch, website_url: "Optional[str]")
 # Routes
 # ---------------------------------------------------------------------------
 
+# Simple in-memory rate limiter: max 5 requests per IP per hour
+_rate_limit: dict = defaultdict(list)
+
 @app.post("/api/research", response_model=ResearchResponse)
-async def start_research(request: ResearchRequest, background_tasks: BackgroundTasks):
+async def start_research(request: ResearchRequest, background_tasks: BackgroundTasks, req: Request):
     """Start a new company research job. Returns immediately with job ID."""
+    ip = req.headers.get("cf-connecting-ip") or req.headers.get("x-forwarded-for", "unknown").split(",")[0].strip()
+    now = time.time()
+    _rate_limit[ip] = [t for t in _rate_limit[ip] if now - t < 3600]
+    if len(_rate_limit[ip]) >= 5:
+        raise HTTPException(status_code=429, detail="Rate limit: 5 research requests per hour per IP")
+    _rate_limit[ip].append(now)
     research_id = str(uuid.uuid4())
     research = CompanyResearch(
         id=research_id,
