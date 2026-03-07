@@ -16,7 +16,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
 from backend.config import settings
-from backend.db.database import init_db, save_research, get_research, get_all_research
+from backend.db.database import (
+    init_db, save_research, get_research, get_all_research,
+    save_embedding, get_all_embeddings,
+)
+from backend.synthesis.embeddings import get_embedding, compute_similarity
 from backend.models.schemas import (
     CompanyResearch,
     ExtractedData,
@@ -157,6 +161,16 @@ async def _run_research(research: CompanyResearch, website_url: "Optional[str]")
         research.updated_at = datetime.utcnow()
         await save_research(research)
 
+        # Auto-embed briefing for semantic search (non-blocking)
+        try:
+            text_for_embedding = _build_embedding_text(research.company_name, briefing)
+            embedding_vector = get_embedding(text_for_embedding)
+            if embedding_vector is not None:
+                await save_embedding(research.id, embedding_vector, text_for_embedding)
+                logger.info(f"[{research.id}] Embedding saved ({len(embedding_vector)} dims)")
+        except Exception as embed_err:
+            logger.warning(f"[{research.id}] Embedding failed (non-fatal): {embed_err}")
+
         await _push_event(
             research.id,
             ProgressEvent(
@@ -190,6 +204,23 @@ async def _run_research(research: CompanyResearch, website_url: "Optional[str]")
         queue = _sse_queues.get(research.id)
         if queue:
             await queue.put(None)  # Sentinel: stream done
+
+
+def _build_embedding_text(company_name: str, briefing) -> str:
+    """Build a compact text representation of a briefing for embedding."""
+    parts = [company_name]
+    if briefing:
+        if briefing.summary:
+            parts.append(briefing.summary)
+        if briefing.industry:
+            parts.append(f"Industry: {briefing.industry}")
+        if briefing.business_model:
+            parts.append(f"Business model: {briefing.business_model}")
+        if briefing.growth_signals:
+            parts.extend(briefing.growth_signals[:3])
+        if briefing.talking_points:
+            parts.extend(briefing.talking_points[:3])
+    return " ".join(parts)
 
 
 # ---------------------------------------------------------------------------
@@ -285,6 +316,56 @@ async def get_history(limit: int = 20):
     """Get recent research history."""
     records = await get_all_research(limit=limit)
     return {"results": records, "count": len(records)}
+
+
+@app.get("/api/search")
+async def search_briefings(q: str = ""):
+    """
+    Semantic search across all research briefings using Nova Embed embeddings.
+    Returns top 5 results sorted by cosine similarity.
+    """
+    if not q.strip():
+        return {"results": [], "query": q}
+
+    try:
+        query_vec = get_embedding(q.strip(), purpose="TEXT_RETRIEVAL")
+        if query_vec is None:
+            # Mock mode or embedding unavailable — return empty gracefully
+            return {"results": [], "query": q}
+
+        all_embeddings = await get_all_embeddings()
+        if not all_embeddings:
+            return {"results": [], "query": q}
+
+        # Compute similarity for each stored embedding
+        scored = []
+        for research_id, vec, text_content in all_embeddings:
+            sim = compute_similarity(query_vec, vec)
+            scored.append((research_id, sim, text_content))
+
+        # Sort by similarity descending, take top 5
+        scored.sort(key=lambda x: x[1], reverse=True)
+        top = scored[:5]
+
+        # Fetch company names from research records
+        results = []
+        for research_id, similarity, text_content in top:
+            record = await get_research(research_id)
+            if not record:
+                continue
+            snippet = text_content[:200] + "..." if len(text_content) > 200 else text_content
+            results.append({
+                "research_id": research_id,
+                "company_name": record.company_name,
+                "similarity": round(similarity, 4),
+                "snippet": snippet,
+            })
+
+        return {"results": results, "query": q}
+
+    except Exception as e:
+        logger.warning(f"Search error: {e}")
+        return {"results": [], "query": q}
 
 
 @app.get("/health")

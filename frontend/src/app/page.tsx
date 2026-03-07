@@ -6,8 +6,8 @@ import { Crosshair } from 'lucide-react';
 import SearchBar from '@/components/SearchBar';
 import ProgressTracker from '@/components/ProgressTracker';
 import HistoryList from '@/components/HistoryList';
-import { startResearch, streamResearch, getHistory } from '@/lib/api';
-import { ResearchJob, ProgressEvent } from '@/types';
+import { startResearch, streamResearch, getHistory, searchBriefings } from '@/lib/api';
+import { ResearchJob, ProgressEvent, SearchResult } from '@/types';
 
 export default function Home() {
   const router = useRouter();
@@ -18,13 +18,15 @@ export default function Home() {
   const [progressMessage, setProgressMessage] = useState('');
   const [history, setHistory] = useState<ResearchJob[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   const loadHistory = useCallback(async () => {
     try {
       const data = await getHistory();
-      if (Array.isArray(data)) {
-        setHistory(data);
-      }
+      const items = Array.isArray(data) ? data : data?.results || [];
+      setHistory(items);
     } catch {
       // Backend not running — silently fail, show empty state
     } finally {
@@ -110,6 +112,21 @@ export default function Home() {
     router.push(`/research/${id}`);
   };
 
+  const handleSemanticSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    setSearchLoading(true);
+    setSearchResults([]);
+    try {
+      const data = await searchBriefings(searchQuery.trim());
+      setSearchResults(data.results || []);
+    } catch {
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen" style={{ background: '#0a0a0a' }}>
       {/* Background radial glow */}
@@ -184,6 +201,63 @@ export default function Home() {
             {progressMessage}
           </div>
         )}
+
+        {/* Semantic Search section */}
+        <div
+          className="rounded-2xl border border-[#222] p-6 mb-6"
+          style={{
+            background: 'linear-gradient(135deg, #141414 0%, #111111 100%)',
+            boxShadow: '0 4px 40px rgba(0,0,0,0.4)',
+          }}
+        >
+          <h2 className="text-sm font-semibold text-[#71717a] uppercase tracking-widest mb-4">
+            Semantic Search
+          </h2>
+          <form onSubmit={handleSemanticSearch} className="flex gap-3">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search briefings..."
+              className="flex-1 rounded-xl px-4 py-2 text-sm text-white bg-[#1a1a1a] border border-[#2a2a2a] outline-none focus:border-[#4f46e5] transition-colors"
+            />
+            <button
+              type="submit"
+              disabled={searchLoading || !searchQuery.trim()}
+              className="px-5 py-2 rounded-xl text-sm font-medium text-white transition-opacity disabled:opacity-40"
+              style={{ background: 'linear-gradient(135deg, #4f46e5, #6366f1)' }}
+            >
+              {searchLoading ? 'Searching...' : 'Search'}
+            </button>
+          </form>
+
+          {searchResults.length > 0 && (
+            <div className="mt-4 space-y-2">
+              {searchResults.map((result) => (
+                <button
+                  key={result.research_id}
+                  onClick={() => router.push(`/research/${result.research_id}`)}
+                  className="w-full text-left rounded-xl border border-[#222] p-4 hover:border-[#4f46e5] transition-colors"
+                  style={{ background: '#0f0f0f' }}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-semibold text-white">{result.company_name}</span>
+                    <span className="text-xs text-[#4f46e5] font-mono">
+                      {(result.similarity * 100).toFixed(1)}% match
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#71717a] line-clamp-2">{result.snippet}</p>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {!searchLoading && searchQuery && searchResults.length === 0 && (
+            <p className="mt-4 text-xs text-[#3f3f46]">
+              No results found. Research some companies first to enable semantic search.
+            </p>
+          )}
+        </div>
 
         {/* History section */}
         <div>

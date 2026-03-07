@@ -22,3 +22,9 @@ export async function getHistory() {
   const res = await fetch(`${API_BASE}/api/history`);
   return res.json();
 }
+
+export async function searchBriefings(query: string) {
+  const params = new URLSearchParams({ q: query });
+  const res = await fetch(`${API_BASE}/api/search?${params}`);
+  return res.json();
+}

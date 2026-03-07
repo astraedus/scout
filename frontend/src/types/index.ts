@@ -58,3 +58,10 @@ export interface ProgressEvent {
   progress: number;
   message?: string;
 }
+
+export interface SearchResult {
+  research_id: string;
+  company_name: string;
+  similarity: number;
+  snippet: string;
+}
