@@ -73,6 +73,8 @@ async def synthesize_briefing(extracted_data: ExtractedData) -> Briefing:
         client = boto3.client(
             "bedrock-runtime",
             region_name=settings.aws_region,
+            aws_access_key_id=settings.aws_access_key_id or None,
+            aws_secret_access_key=settings.aws_secret_access_key or None,
         )
 
         response = client.converse(

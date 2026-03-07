@@ -7,7 +7,7 @@ import json
 import logging
 import uuid
 from datetime import datetime
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,6 +24,9 @@ from backend.models.schemas import (
     ProgressEvent,
 )
 from backend.config import settings as app_settings
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 if app_settings.mock_mode:
     from backend.extractors.mock import (
@@ -55,15 +58,12 @@ else:
     from backend.synthesis.briefing import synthesize_briefing
     logger.info("Mode: HTTP fallback (requests + Bedrock synthesis)")
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
 app = FastAPI(title="Scout API", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -89,7 +89,7 @@ async def _push_event(research_id: str, event: ProgressEvent) -> None:
         await queue.put(event)
 
 
-async def _run_research(research: CompanyResearch, website_url: str | None) -> None:
+async def _run_research(research: CompanyResearch, website_url: "Optional[str]") -> None:
     """
     Background task: run all extractors, then synthesize, then save.
     Sends progress events via SSE throughout.
