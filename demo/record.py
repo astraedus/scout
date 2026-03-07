@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Scout demo video recorder.
-Records ~2:30 walkthrough, adds edge-tts narration, outputs MP4.
+Scout demo video recorder v2.
+Records ~3 min walkthrough with live Bedrock backend + semantic search.
 Usage: python3 demo/record.py
 """
 import asyncio, subprocess, time, os
@@ -14,6 +14,9 @@ VDIR  = DEMO / "video"
 ADIR  = DEMO / "audio"
 OUT   = DEMO / "scout-demo.mp4"
 
+# Live EC2 backend
+API_URL = "http://100.24.122.229"
+
 for d in [VDIR, ADIR]: d.mkdir(parents=True, exist_ok=True)
 
 NARRATION = [
@@ -25,29 +28,38 @@ NARRATION = [
      "Scout does all of this in two minutes. One search. Real websites. Real-time data. "
      "A complete briefing before you finish your coffee."),
     ("02_watch",
-     "Watch what happens when we research Stripe. Scout's AI agents are now navigating "
-     "real websites in real time. Not stale training data. Actually visiting each source live."),
-    ("03_website",
-     "First, the company website. Extracting products, the team, and technology details."),
-    ("04_news",
-     "Google News for the latest headlines. Funding announcements, product launches, partnerships."),
-    ("05_linkedin",
-     "LinkedIn reveals company size, employee count, and key decision makers."),
-    ("06_crunchbase",
-     "Crunchbase gives us funding history, investors, and growth stage."),
-    ("07_careers",
-     "Job listings confirm the exact tech stack and show where the company is hiring fast."),
-    ("08_synthesis",
-     "Now Amazon Nova Two Lite synthesizes all the findings into structured intelligence."),
-    ("09_briefing",
-     "In under two minutes, a complete briefing. Key people with titles. "
-     "Recent news. Tech stack confirmed from job listings. Growth signals."),
-    ("10_talking",
-     "And the talking points. Not generic icebreakers. Specific insights from what Scout actually found on the web."),
-    ("11_close",
+     "Let's research a company. Scout's backend is live on AWS, "
+     "using Amazon Nova Two Lite through Bedrock to synthesize real web data."),
+    ("03_progress",
+     "Watch the progress. Scout is visiting the company website, scraping Google News, "
+     "checking LinkedIn, Crunchbase, and job listings. All live, all in real time."),
+    ("04_synthesis",
+     "Now Amazon Nova Two Lite synthesizes all the findings. "
+     "Not template fill. Actual reasoning over the extracted data."),
+    ("05_briefing",
+     "In under two minutes. A complete briefing. Executive summary. Key people with titles. "
+     "Recent news. Tech stack confirmed from job listings."),
+    ("06_talking",
+     "And the talking points. Not generic icebreakers. "
+     "Specific insights from what Scout actually found on the web."),
+    ("07_search_intro",
+     "But here's where it gets powerful. After every research job, "
+     "Scout automatically generates embedding vectors using Amazon Nova Multimodal Embeddings. "
+     "This enables semantic search across all your research."),
+    ("08_search_demo",
+     "Watch. We search for A.I. safety company. "
+     "Scout doesn't do keyword matching. It understands meaning. "
+     "Anthropic ranks highest because the embedding space captures semantic similarity."),
+    ("09_search_demo2",
+     "Now let's try payment processing fintech. "
+     "Stripe jumps to the top. The embeddings understand what these companies actually do."),
+    ("10_close",
      "Scout. AI-powered company research in seconds. "
-     "Built with Amazon Nova Act for live website navigation "
-     "and Amazon Nova Two Lite for intelligent synthesis. Powered by AWS Bedrock."),
+     "Built with three Amazon Nova services. "
+     "Nova Act for live website navigation. "
+     "Nova Two Lite for intelligent synthesis. "
+     "And Nova Multimodal Embeddings for semantic memory. "
+     "All powered by AWS Bedrock."),
 ]
 
 
@@ -93,59 +105,91 @@ def record():
         )
         page = ctx.new_page()
 
-        # --- Dashboard ---
+        # --- Dashboard with history ---
         page.goto("http://localhost:3000", wait_until="domcontentloaded")
-        time.sleep(5)  # hold on dashboard
+        time.sleep(6)  # show dashboard + existing history
 
-        # Hover search area
+        # Type company name
         inp = page.locator("input").first
-        inp.hover()
-        time.sleep(1.5)
-
-        # Type "Stripe"
         inp.click()
         time.sleep(0.5)
-        for ch in "Stripe":
+        for ch in "Salesforce":
             page.keyboard.type(ch)
-            time.sleep(0.18)
-        time.sleep(2.5)
+            time.sleep(0.15)
+        time.sleep(1.5)
 
-        # Submit
+        # Submit research
         page.keyboard.press("Enter")
-        time.sleep(1)
+        time.sleep(2)
 
-        # --- Progress steps — ~15s total in mock mode, we add padding ---
-        # Wait for research to complete (the page will navigate when done)
-        # Meanwhile capture the progress UI
+        # --- Progress tracking (real backend ~20-40s) ---
+        # Wait for navigation to briefing page
         try:
-            page.wait_for_url("**/research/**", timeout=60000)
+            page.wait_for_url("**/research/**", timeout=90000)
         except:
             pass
-        time.sleep(1)
+        time.sleep(2)
 
         # --- Briefing page ---
-        # Overview (top of page)
-        time.sleep(5)
+        time.sleep(5)  # overview
 
-        # Scroll to key people
-        page.evaluate("window.scrollTo({top: 380, behavior: 'smooth'})")
+        # Scroll through sections
+        page.evaluate("window.scrollTo({top: 400, behavior: 'smooth'})")
         time.sleep(4)
 
-        # Scroll to news
-        page.evaluate("window.scrollTo({top: 680, behavior: 'smooth'})")
+        page.evaluate("window.scrollTo({top: 700, behavior: 'smooth'})")
         time.sleep(4)
 
-        # Scroll to tech stack
-        page.evaluate("window.scrollTo({top: 980, behavior: 'smooth'})")
+        page.evaluate("window.scrollTo({top: 1000, behavior: 'smooth'})")
         time.sleep(4)
 
-        # Scroll to talking points (most impressive)
+        # Talking points
         page.evaluate("window.scrollTo({top: 1500, behavior: 'smooth'})")
         time.sleep(6)
 
-        # Scroll back to top + hold
+        # Back to top
         page.evaluate("window.scrollTo({top: 0, behavior: 'smooth'})")
+        time.sleep(3)
+
+        # --- Navigate back to home for semantic search ---
+        page.goto("http://localhost:3000", wait_until="domcontentloaded")
         time.sleep(4)
+
+        # Scroll to semantic search section
+        page.evaluate("document.querySelector('form')?.closest('div')?.nextElementSibling?.scrollIntoView({behavior: 'smooth'})")
+        time.sleep(1)
+        # Find the semantic search input (second input on page)
+        search_inputs = page.locator("input[placeholder*='Search']")
+        if search_inputs.count() > 0:
+            search_input = search_inputs.first
+        else:
+            search_input = page.locator("input").nth(1)
+
+        search_input.click()
+        time.sleep(0.5)
+
+        # Type semantic search query
+        for ch in "AI safety company":
+            page.keyboard.type(ch)
+            time.sleep(0.12)
+        time.sleep(1)
+
+        # Submit search
+        page.keyboard.press("Enter")
+        time.sleep(4)  # show results
+
+        # Clear and try another query
+        search_input.click(click_count=3)
+        time.sleep(0.3)
+        for ch in "payment processing fintech":
+            page.keyboard.type(ch)
+            time.sleep(0.12)
+        time.sleep(1)
+        page.keyboard.press("Enter")
+        time.sleep(5)  # show results
+
+        # Hold on final results
+        time.sleep(3)
 
         vid = page.video.path()
         ctx.close()
@@ -155,7 +199,6 @@ def record():
 
 
 def combine(raw_video):
-    # Concatenate audio
     list_f = DEMO / "audio_list.txt"
     audios = sorted(ADIR.glob("*.mp3"))
     list_f.write_text("".join(f"file '{a}'\n" for a in audios))
@@ -170,8 +213,7 @@ def combine(raw_video):
     vdur = duration(raw_video)
     print(f"  audio: {adur:.1f}s  video: {vdur:.1f}s")
 
-    # Adjust video speed to match audio length
-    speed = vdur / adur  # <1 = slow down, >1 = speed up
+    speed = vdur / adur
     print(f"  speed factor: {speed:.3f}x")
 
     subprocess.run([
@@ -187,40 +229,37 @@ def combine(raw_video):
     ], check=True)
 
     mb = OUT.stat().st_size / 1024 / 1024
-    print(f"\n✓ {OUT}  ({mb:.1f} MB)")
+    print(f"\n  {OUT}  ({mb:.1f} MB)")
 
 
 async def main():
-    print("=== Scout Demo Recorder ===\n")
+    print("=== Scout Demo Recorder v2 (Live Bedrock + Semantic Search) ===\n")
 
-    print("[1/4] Narration audio...")
+    print("[1/3] Narration audio...")
     await gen_audio()
 
-    print("\n[2/4] Starting servers...")
-    env = {**os.environ, "MOCK_MODE": "true"}
+    print("\n[2/3] Starting frontend (backend is live on EC2)...")
+    # Verify EC2 backend is up
+    print(f"  checking {API_URL}/health ...")
+    if not wait_up(f"{API_URL}/health", 10):
+        print("ERROR: EC2 backend not reachable")
+        return
+    print("  backend OK")
 
-    backend = subprocess.Popen(
-        [str(SCOUT / "venv/bin/uvicorn"), "backend.main:app",
-         "--port", "8000", "--host", "127.0.0.1"],
-        cwd=str(SCOUT), env=env,
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-    if not wait_up("http://127.0.0.1:8000/health", 30):
-        print("ERROR: backend"); backend.kill(); return
-    print("  backend ready")
-
+    env = {**os.environ, "NEXT_PUBLIC_API_URL": API_URL}
     frontend = subprocess.Popen(
         ["npm", "run", "dev"],
         cwd=str(SCOUT / "frontend"),
+        env=env,
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     print("  waiting for Next.js to compile (~30s)...")
     if not wait_up("http://localhost:3000", 120):
-        print("ERROR: frontend"); backend.kill(); frontend.kill(); return
+        print("ERROR: frontend"); frontend.kill(); return
     print("  frontend ready")
 
     try:
-        print("\n[3/4] Recording...")
+        print("\n[3/3] Recording...")
         loop = asyncio.get_event_loop()
         raw = await loop.run_in_executor(None, record)
 
@@ -228,8 +267,7 @@ async def main():
         combine(raw)
 
     finally:
-        backend.kill()
         frontend.kill()
-        print("Servers stopped.")
+        print("Frontend stopped.")
 
 asyncio.run(main())
