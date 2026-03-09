@@ -8,6 +8,16 @@
 |-----------|----------|-------|--------|
 | [Amazon Nova AI Hackathon 2026](https://amazonnovaai.devpost.com/) | DevPost | Open | SUBMITTED (no Nova Act key -- geo-blocked, HTTP fallback used) |
 
+## Live Demo & Links
+
+| | |
+|---|---|
+| **Live Frontend** | [frontend-murex-eta-95.vercel.app](https://frontend-murex-eta-95.vercel.app) |
+| **Live Backend API** | [100.24.122.229:8000](http://100.24.122.229:8000) ([API docs](http://100.24.122.229:8000/docs)) |
+| **Demo Video** | [youtu.be/t9kPFHv62m4](https://youtu.be/t9kPFHv62m4) |
+| **Blog Post** | [How Scout Uses Three Amazon Nova Services](https://builder.aws.com/content/3AccSTscylISyrudUimMDH1sv8k/how-scout-uses-three-amazon-nova-services-to-transform-sales-research) |
+| **DevPost** | [devpost.com/software/scout-ixslhg](https://devpost.com/software/scout-ixslhg) |
+
 **Special adaptations**: Added `http_website.py` + `http_news.py` extractors so Scout works without Nova Act API key (geo-blocked outside US). Three modes: mock, http-fallback (requests/BS4 + Bedrock), nova-act.
 
 Scout turns company research from a 30-minute manual task into a 2-minute automated briefing. Type a company name, and Scout's AI agents navigate real websites to gather live data, then synthesize it into actionable intelligence for sales calls and meetings.
