@@ -51,19 +51,7 @@ Scout automates this entire workflow:
 
 ## Architecture
 
-```
-User inputs company name
-  -> FastAPI Backend generates research plan
-  -> Nova Act agents navigate real websites:
-      -> Company website (about, team, products)
-      -> Google News (recent articles)
-      -> LinkedIn (company size, key people)
-      -> Crunchbase (funding, investors)
-      -> Careers page (open roles, tech stack)
-  -> All extracted data collected
-  -> Nova 2 Lite synthesizes structured briefing
-  -> Next.js Dashboard renders results with evidence
-```
+![Architecture](docs/architecture.png)
 
 ## Tech Stack
 
