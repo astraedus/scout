@@ -13,7 +13,7 @@
 | | |
 |---|---|
 | **Live Frontend** | [frontend-murex-eta-95.vercel.app](https://frontend-murex-eta-95.vercel.app) |
-| **Live Backend API** | [100.24.122.229:8000](http://100.24.122.229:8000) ([API docs](http://100.24.122.229:8000/docs)) |
+| **Live Backend API** | [scout-api.astraedus.dev](https://scout-api.astraedus.dev) ([API docs](https://scout-api.astraedus.dev/docs)) |
 | **Demo Video** | [youtu.be/t9kPFHv62m4](https://youtu.be/t9kPFHv62m4) |
 | **Blog Post** | [How Scout Uses Three Amazon Nova Services](https://builder.aws.com/content/3AccSTscylISyrudUimMDH1sv8k/how-scout-uses-three-amazon-nova-services-to-transform-sales-research) |
 | **DevPost** | [devpost.com/software/scout-ixslhg](https://devpost.com/software/scout-ixslhg) |
