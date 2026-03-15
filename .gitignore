@@ -42,3 +42,13 @@ Thumbs.db
 # Logs
 *.log
 logs/
+
+# Internal docs
+DESIGN.md
+tasks/
+demo/script.md
+demo/record.py
+demo/*.mp4
+demo/*.mp3
+blog*.md
+devpost-story.md

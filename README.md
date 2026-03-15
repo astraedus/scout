@@ -53,6 +53,16 @@ Scout automates this entire workflow:
 
 ![Architecture](docs/architecture.png)
 
+```mermaid
+graph LR
+    A[Next.js Frontend<br/>Search + Dashboard] -->|Search query| B[FastAPI Backend<br/>EC2]
+    B -->|Extract listings| C[Amazon Nova Act<br/>Web Scraping Agent]
+    C -->|Structured listing data| B
+    B -->|Analyze + Enrich| D[Nova Micro<br/>Lead Scoring]
+    D -->|Scored leads| B
+    B -->|Lead cards +<br/>Contact info| A
+```
+
 ## Tech Stack
 
 | Layer | Technology |
