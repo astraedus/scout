@@ -39,6 +39,7 @@ class NewsItem(BaseModel):
     headline: str
     date: Optional[str] = None
     summary: Optional[str] = None
+    url: Optional[str] = None
 
 class TechStack(BaseModel):
     confirmed: List[str] = Field(default_factory=list)

@@ -311,7 +311,13 @@ export default function BriefingPage({ params }: PageProps) {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white leading-snug">{item.headline}</p>
+                        {item.url ? (
+                          <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-white leading-snug hover:text-[#f59e0b] transition-colors">
+                            {item.headline}
+                          </a>
+                        ) : (
+                          <p className="text-sm font-medium text-white leading-snug">{item.headline}</p>
+                        )}
                         {item.date && (
                           <p className="text-xs text-[#52525b] mt-0.5">{item.date}</p>
                         )}

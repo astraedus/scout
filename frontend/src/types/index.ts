@@ -7,6 +7,7 @@ export interface NewsItem {
   headline: string;
   date?: string;
   summary?: string;
+  url?: string;
 }
 
 export interface TechStack {

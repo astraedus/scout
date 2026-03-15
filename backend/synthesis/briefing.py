@@ -32,7 +32,7 @@ Respond with ONLY a valid JSON object matching this schema (no markdown fences, 
     {{"name": "string", "title": "string"}}
   ],
   "recent_news": [
-    {{"headline": "string", "date": "string", "summary": "string"}}
+    {{"headline": "string", "date": "string", "summary": "string", "url": "string or null"}}
   ],
   "tech_stack": {{
     "confirmed": ["technologies found on website or job listings"],

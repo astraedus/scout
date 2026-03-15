@@ -47,7 +47,7 @@ class HttpNewsExtractor(BaseExtractor):
                 clean_desc = re.sub(r"<[^>]+>", "", description).strip()[:200]
 
                 articles.append(
-                    f"- {title} ({source}, {pub_date[:16]})\n  {clean_desc}"
+                    f"- {title} ({source}, {pub_date[:16]})\n  {clean_desc}\n  URL: {link}"
                 )
 
             if not articles:
